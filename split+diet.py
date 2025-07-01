@@ -9,13 +9,13 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 
 # --- 1. Load Environment Variables & Configure API Key ---
-load_dotenv()
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-if not GOOGLE_API_KEY:
-    raise ValueError("CRITICAL ERROR: GOOGLE_API_KEY not found in the .env file.")
+# GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-genai.configure(api_key=GOOGLE_API_KEY)
+# if not GOOGLE_API_KEY:
+#     raise ValueError("CRITICAL ERROR: GOOGLE_API_KEY not found in the .env file.")
+
+genai.configure(api_key="AIzaSyAGT8ojwDtHKuV5HGYbhDg4QNVM0OfXKl8")
 
 # --- 2. Create and Configure the FastAPI App Instance ---
 app = FastAPI(
@@ -109,7 +109,7 @@ async def generate_diet_plan(user_input: UserInput = Body(...)):
     """
     try:
         # NOTE: Corrected to valid model names
-        model_to_use = "gemini-1.5-pro-latest" if user_input.is_premium else "gemini-1.5-flash-latest"
+        model_to_use = "gemini-2.5-flash" if user_input.is_premium else "gemini-2.0-flash"
         print(f"Diet plan request. Using model: {model_to_use}")
 
         model = genai.GenerativeModel(
@@ -149,7 +149,7 @@ async def generate_workout_split(request: WorkoutRequest = Body(...)):
         prompt = create_workout_prompt(request)
         # NOTE: Corrected to a valid model name
         model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash-latest',
+            model_name='gemini-2.5-flash',
             generation_config=genai.GenerationConfig(response_mime_type="application/json")
         )
         response = await model.generate_content_async(prompt)
