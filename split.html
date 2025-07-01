@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Workout Split Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        input, select {
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        button {
+            grid-column: 1 / -1;
+            padding: 0.8rem 1.5rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background-color: #2980b9;
+        }
+        #results {
+            margin-top: 2rem;
+        }
+        .loading {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #7f8c8d;
+        }
+        .error {
+            color: #e74c3c;
+            background: #fbeae5;
+            padding: 1rem;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .day-card {
+            background: #ecf0f1;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 5px solid #3498db;
+        }
+        .day-card h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .exercise-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .exercise-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed #bdc3c7;
+        }
+        .exercise-list li:last-child {
+            border-bottom: none;
+        }
+        .exercise-name { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gym Workout Split Generator</h1>
+        <form id="workout-form">
+            <div class="form-group">
+                <label for="days_per_week">Days per Week</label>
+                <input type="number" id="days_per_week" name="days_per_week" min="1" max="7" value="4" required>
+            </div>
+            <div class="form-group">
+                <label for="experience_level">Experience Level</label>
+                <select id="experience_level" name="experience_level" required>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate" selected>Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="goal">Primary Goal</label>
+                <select id="goal" name="goal" required>
+                    <option value="muscle gain" selected>Muscle Gain</option>
+                    <option value="fat loss">Fat Loss</option>
+                    <option value="general fitness">General Fitness</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="focus">Optional Focus</label>
+                <input type="text" id="focus" name="focus" placeholder="e.g., legs, chest...">
+            </div>
+            <button type="submit" id="submit-btn">Generate Workout</button>
+        </form>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('workout-form');
+        const resultsDiv = document.getElementById('results');
+        const submitBtn = document.getElementById('submit-btn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            submitBtn.disabled = true;
+            resultsDiv.innerHTML = '<p class="loading">Generating your personalized workout plan... please wait.</p>';
+
+            const formData = new FormData(form);
+            const requestData = {
+                days_per_week: parseInt(formData.get('days_per_week')),
+                experience_level: formData.get('experience_level'),
+                goal: formData.get('goal'),
+                focus: formData.get('focus') || null
+            };
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/generate-workout-split', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'An unknown error occurred.');
+                }
+
+                const data = await response.json();
+                displayWorkoutPlan(data.workout_plan);
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error"><strong>Error:</strong> ${error.message}</div>`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        function displayWorkoutPlan(plan) {
+            resultsDiv.innerHTML = '';
+            if (!plan || plan.length === 0) {
+                resultsDiv.innerHTML = '<p>No workout plan was generated.</p>';
+                return;
+            }
+
+            plan.forEach(day => {
+                const dayCard = document.createElement('div');
+                dayCard.className = 'day-card';
+                
+                let exercisesHtml = '<p>Rest day or light activity recommended.</p>';
+                if (day.exercises && day.exercises.length > 0) {
+                    exercisesHtml = '<ul class="exercise-list">';
+                    day.exercises.forEach(ex => {
+                        exercisesHtml += `
+                            <li>
+                                <span class="exercise-name">${ex.name}:</span>
+                                <span>${ex.sets} sets of ${ex.reps} reps</span>
+                            </li>
+                        `;
+                    });
+                    exercisesHtml += '</ul>';
+                }
+
+                dayCard.innerHTML = `
+                    <h2>${day.day}: <small>${day.focus}</small></h2>
+                    ${exercisesHtml}
+                `;
+                resultsDiv.appendChild(dayCard);
+            });
+        }
+    </script>
+</body>
+</html>
