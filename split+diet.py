@@ -108,14 +108,38 @@ class WorkoutSplitResponse(BaseModel):
 # --- DIET PLAN ENDPOINT ---
 # --- UPDATED: System prompt is now a dynamic function ---
 def create_diet_prompt(cuisine: str) -> str:
-    return f"""You are an expert nutritionist and fitness coach. Your task is to generate a detailed, 7-day diet plan based on the user's specifications.
+    return f"""You are an expert nutritionist generating a diet plan.
 
-**CRITICAL INSTRUCTIONS:**
-1.  **Cuisine:** The entire diet plan MUST be based on common, easily available **{cuisine}** food items.
-2.  **Structure:** The output MUST be a valid JSON object that strictly adheres to the provided schema. Do NOT include any text, explanations, or markdown formatting like ```json before or after the JSON object.
-3.  **Audience:** The plan is for active gym-goers. Prioritize protein.
-4.  **Practicality:** Suggest realistic portion sizes.
-5.  **Variety:** Provide a varied plan for all 7 days."""
+**CRITICAL RULES:**
+1.  **CUISINE:** The plan MUST be based on **{cuisine}** food items.
+2.  **JSON FORMAT:** Your ENTIRE response MUST be a single, valid JSON object. Do not add any text, markdown, or explanations outside of the JSON brackets.
+3.  **STRICT SCHEMA:** The JSON object must have exactly three top-level keys: `plan_summary`, `weekly_plan`, and `general_tips`.
+4.  **DATA TYPES:** All calorie and macronutrient values (`calories`, `protein_g`, `carbs_g`, `fats_g`) MUST be integers, NOT strings.
+
+**EXAMPLE JSON STRUCTURE TO FOLLOW:**
+{{
+  "plan_summary": {{
+    "estimated_daily_calories": "Approx. 2200-2400 kcal",
+    "estimated_daily_protein": "Approx. 150-160 g"
+  }},
+  "weekly_plan": {{
+    "Monday": {{
+      "meals": {{
+        "Breakfast": {{
+          "food_items": ["Oats with whey protein", "Handful of almonds"],
+          "calories": 400, "protein_g": 30, "carbs_g": 50, "fats_g": 10
+        }}
+      }},
+      "daily_totals": {{ "total_calories": 2250, "total_protein_g": 155, "total_carbs_g": 220, "total_fats_g": 65 }}
+    }},
+    "Tuesday": {{ ... }}
+  }},
+  "general_tips": [
+    "Drink 3-4 liters of water daily.",
+    "Get 7-8 hours of sleep for recovery."
+  ]
+}}
+"""
 
 @app.post("/generate-diet-plan", response_model=DietPlanResponse, tags=["Diet Plan"])
 async def generate_diet_plan(user_input: UserInput = Body(...)):
