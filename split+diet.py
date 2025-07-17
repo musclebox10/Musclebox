@@ -61,7 +61,7 @@ class UserInput(BaseModel):
     # --- UPDATED: Added cuisine field with a default value ---
     cuisine: Cuisine = Field(default=Cuisine.INDIAN, description="The desired cuisine for the diet plan.")
     allergies: List[str] = Field([], example=["peanuts"])
-    meals_per_day: int = Field(5, gt=2, lt=7)
+    meals_per_day: int = Field(5, gt=1, lt=6)
     is_premium: bool = Field(default=False, description="Use gemini-1.5-pro for higher quality.")
 
 class MealDetail(BaseModel):
@@ -145,8 +145,8 @@ def create_diet_prompt(cuisine: str) -> str:
 async def generate_diet_plan(user_input: UserInput = Body(...)):
     """
     Generates a 7-day personalized diet plan in a specific cuisine.
-    - Uses **Gemini 1.5 Pro** for premium requests.
-    - Uses **Gemini 1.5 Flash** for standard requests.
+    - Uses **Gemini 2.5 Pro** for premium requests.
+    - Uses **Gemini 2.0 Flash** for standard requests.
     """
     try:
         model_to_use = "gemini-2.5-flash" if user_input.is_premium else "gemini-2.0-flash"
