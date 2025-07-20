@@ -104,8 +104,8 @@ def create_diet_prompt(cuisine: str, language: str) -> str:
 async def generate_diet_plan(user_input: UserInput = Body(...)):
     """Generates a 7-day personalized diet plan using free-text inputs."""
     try:
-        # NOTE: Using the latest valid models. You can change these if new models are released.
-        PREMIUM_MODEL = "gemini-2.5-pro"
+        # FIXED: Changed from gemini-2.5-pro to gemini-2.5-flash as requested
+        PREMIUM_MODEL = "gemini-2.5-flash"
         STANDARD_MODEL = "gemini-2.0-flash"
         
         model_to_use = PREMIUM_MODEL if user_input.is_premium else STANDARD_MODEL
@@ -154,8 +154,8 @@ def create_workout_prompt(request: WorkoutRequest) -> str:
 async def generate_workout_split(request: WorkoutRequest = Body(...)):
     """Generates a weekly workout split using free-text inputs."""
     try:
-        # NOTE: Using the latest valid models. You can change these if new models are released.
-        PREMIUM_MODEL = "gemini-2.5-pro"
+        # FIXED: Changed from gemini-2.5-pro to gemini-2.5-flash as requested
+        PREMIUM_MODEL = "gemini-2.5-flash"
         STANDARD_MODEL = "gemini-2.0-flash"
         
         model_to_use = PREMIUM_MODEL if request.is_premium else STANDARD_MODEL
