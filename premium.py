@@ -152,7 +152,7 @@ async def generate_workout_split(request: WorkoutRequest = Body(...)):
     """Generates a weekly workout split using free-text inputs."""
     try:
         prompt = create_workout_prompt(request)
-        model_to_use = "gemini-1.5-pro-latest" if request.is_premium else "gemini-1.5-flash-latest"
+        model_to_use = "gemini-2.5-pro" if request.is_premium else "gemini-2.0-flash"
         print(f"Workout split request. Using model: {model_to_use}")
         model = genai.GenerativeModel(
             model_name=model_to_use,
