@@ -106,7 +106,7 @@ def create_diet_prompt(cuisine: str, language: str) -> str:
 async def generate_diet_plan(user_input: UserInput = Body(...)):
     """Generates a 7-day personalized diet plan using free-text inputs."""
     try:
-        model_to_use = "gemini-1.5-pro-latest" if user_input.is_premium else "gemini-1.5-flash-latest"
+        model_to_use = "gemini-2.5-pro" if user_input.is_premium else "gemini-2.0-flash-latest"
         print(f"Diet plan request for {user_input.cuisine} cuisine in {user_input.language}. Using model: {model_to_use}")
 
         system_prompt = create_diet_prompt(user_input.cuisine, user_input.language)
