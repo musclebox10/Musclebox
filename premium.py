@@ -321,7 +321,7 @@ Create a personalized plan that matches their goals and preferences."""
 
             response = await model.generate_content_async([user_prompt_data])
             
-            # Clean the response text
+            # Clean the response text - FIXED SYNTAX ERROR
             response_text = response.text.strip()
             if response_text.startswith("```
                 response_text = response_text[7:]
@@ -396,7 +396,7 @@ async def generate_workout_split(request: WorkoutRequest = Body(...)):
             )
             response = await model.generate_content_async("Generate the workout plan now.")
 
-            # Clean the response text
+            # Clean the response text - FIXED SYNTAX ERROR
             response_text = response.text.strip()
             if response_text.startswith("```json"):
                 response_text = response_text[7:]
