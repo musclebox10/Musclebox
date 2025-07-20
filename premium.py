@@ -17,9 +17,9 @@ genai.configure(api_key=GOOGLE_API_KEY)
 
 # --- 2. FastAPI App Instance & CORS ---
 app = FastAPI(
-    title="AI Fitness Coach API (Flexible)",
+    title="AI Fitness Coach API (Flexible & Robust)",
     description="An API that uses free-text input to generate personalized diet plans and workout splits.",
-    version="3.0.0", # Major version change to reflect lack of Enums
+    version="3.1.0", 
 )
 
 app.add_middleware(
@@ -31,7 +31,7 @@ app.add_middleware(
 )
 
 
-# --- 3. Pydantic Models (Enums and Literals removed) ---
+# --- 3. Pydantic Models (No Enums for Flexibility) ---
 
 # --- DIET PLAN MODELS ---
 class UserInput(BaseModel):
@@ -39,7 +39,6 @@ class UserInput(BaseModel):
     gender: str = Field(..., example="Male")
     height_cm: float = Field(..., gt=100, lt=250)
     weight_kg: float = Field(..., gt=30, lt=200)
-    # --- Fields are now flexible strings ---
     fitness_goal: str = Field(..., example="I want to lose fat and build some muscle.")
     dietary_preference: str = Field(..., example="Mostly vegetarian, but I eat eggs.")
     cuisine: str = Field(default="Indian", example="North Indian")
@@ -68,7 +67,6 @@ class DietPlanResponse(BaseModel):
 # --- WORKOUT SPLIT MODELS ---
 class WorkoutRequest(BaseModel):
     days_per_week: int = Field(..., gt=0, le=7)
-    # --- Fields are now flexible strings ---
     experience_level: str = Field(..., example="I have been lifting for 2 years.")
     goal: str = Field(..., example="Get stronger and look more athletic.")
     focus: Optional[str] = Field(None, example="legs")
@@ -99,14 +97,18 @@ def create_diet_prompt(cuisine: str, language: str) -> str:
 1.  **LANGUAGE:** All text in your response MUST be in **{language}**.
 2.  **CUISINE:** The plan MUST be based on **{cuisine}** food items.
 3.  **JSON FORMAT:** Your ENTIRE response MUST be a single, valid JSON object. Do not add any text or markdown outside of the JSON brackets.
-4.  **STRICT SCHEMA:** The JSON must have exactly three top-level keys: `plan_summary`, `weekly_plan`, `general_tips`.
-5.  **DATA TYPES:** All nutritional values (`calories`, `protein_g`, etc.) MUST be integers, not strings."""
+4.  **STRICT SCHEMA:** The JSON must have exactly three top-level keys: `plan_summary`, `weekly_plan`, and `general_tips`.
+5.  **DATA TYPES:** All nutritional values (`calories`, `protein_g`, `carbs_g`, `fats_g`) MUST be integers, NOT strings. This is a critical rule."""
 
 @app.post("/generate-diet-plan", response_model=DietPlanResponse, tags=["Diet Plan"])
 async def generate_diet_plan(user_input: UserInput = Body(...)):
     """Generates a 7-day personalized diet plan using free-text inputs."""
     try:
-        model_to_use = "gemini-2.5-flash" if user_input.is_premium else "gemini-2.0-flash"
+        # NOTE: Using the latest valid models. You can change these if new models are released.
+        PREMIUM_MODEL = "gemini-1.5-pro-latest"
+        STANDARD_MODEL = "gemini-1.5-flash-latest"
+        
+        model_to_use = PREMIUM_MODEL if user_input.is_premium else STANDARD_MODEL
         print(f"Diet plan request for {user_input.cuisine} cuisine in {user_input.language}. Using model: {model_to_use}")
 
         system_prompt = create_diet_prompt(user_input.cuisine, user_input.language)
@@ -118,6 +120,7 @@ async def generate_diet_plan(user_input: UserInput = Body(...)):
         user_prompt_data = f"Interpret these user details and generate the plan: {user_input.model_dump_json()}"
         response = await model.generate_content_async([user_prompt_data])
         
+        # DEFENSIVE VALIDATION: This block prevents the 500 error if the AI response is malformed.
         try:
             plan_data = json.loads(response.text)
             validated_plan = DietPlanResponse.model_validate(plan_data)
@@ -151,15 +154,22 @@ def create_workout_prompt(request: WorkoutRequest) -> str:
 async def generate_workout_split(request: WorkoutRequest = Body(...)):
     """Generates a weekly workout split using free-text inputs."""
     try:
-        prompt = create_workout_prompt(request)
-        model_to_use = "gemini-2.5-flash" if request.is_premium else "gemini-2.0-flash"
+        # NOTE: Using the latest valid models. You can change these if new models are released.
+        PREMIUM_MODEL = "gemini-1.5-pro-latest"
+        STANDARD_MODEL = "gemini-1.5-flash-latest"
+        
+        model_to_use = PREMIUM_MODEL if request.is_premium else STANDARD_MODEL
         print(f"Workout split request. Using model: {model_to_use}")
+        
+        prompt = create_workout_prompt(request)
         model = genai.GenerativeModel(
             model_name=model_to_use,
             system_instruction=prompt,
             generation_config=genai.GenerationConfig(response_mime_type="application/json")
         )
         response = await model.generate_content_async("") 
+
+        # DEFENSIVE VALIDATION: This block prevents the 500 error if the AI response is malformed.
         try:
             split_data = json.loads(response.text)
             validated_split = WorkoutSplitResponse.model_validate(split_data)
@@ -172,7 +182,7 @@ async def generate_workout_split(request: WorkoutRequest = Body(...)):
             raise HTTPException(status_code=500, detail="The AI returned a non-JSON response.")
     except Exception as e:
         print(f"An unexpected error occurred in /generate-workout-split: {e}")
-        raise HTTPException(e)
+        raise HTTPException(status_code=503, detail="An AI service error occurred.")
 
 
 # --- ROOT ENDPOINT ---
