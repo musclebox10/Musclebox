@@ -105,8 +105,8 @@ async def generate_diet_plan(user_input: UserInput = Body(...)):
     """Generates a 7-day personalized diet plan using free-text inputs."""
     try:
         # NOTE: Using the latest valid models. You can change these if new models are released.
-        PREMIUM_MODEL = "gemini-1.5-pro-latest"
-        STANDARD_MODEL = "gemini-1.5-flash-latest"
+        PREMIUM_MODEL = "gemini-2.5-pro"
+        STANDARD_MODEL = "gemini-2.0-flash"
         
         model_to_use = PREMIUM_MODEL if user_input.is_premium else STANDARD_MODEL
         print(f"Diet plan request for {user_input.cuisine} cuisine in {user_input.language}. Using model: {model_to_use}")
