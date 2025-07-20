@@ -155,8 +155,8 @@ async def generate_workout_split(request: WorkoutRequest = Body(...)):
     """Generates a weekly workout split using free-text inputs."""
     try:
         # NOTE: Using the latest valid models. You can change these if new models are released.
-        PREMIUM_MODEL = "gemini-1.5-pro-latest"
-        STANDARD_MODEL = "gemini-1.5-flash-latest"
+        PREMIUM_MODEL = "gemini-2.5-pro"
+        STANDARD_MODEL = "gemini-2.0-flash"
         
         model_to_use = PREMIUM_MODEL if request.is_premium else STANDARD_MODEL
         print(f"Workout split request. Using model: {model_to_use}")
