@@ -152,6 +152,7 @@ async def generate_diet_plan(user_input: UserInput = Body(...)):
         )
         user_prompt_data = f"Here are my details, generate my diet plan:\n{user_input.model_dump_json(indent=2)}"
         response = await model.generate_content_async([user_prompt_data])
+        print(f"Response from AI: {response.text}")
         return json.loads(response.text)
     except Exception as e:
         print(f"Error in /generate-diet-plan: {e}")
