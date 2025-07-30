@@ -37,6 +37,7 @@ class FitnessGoal(str, Enum):
     FAT_LOSS = "Fat Loss"
     MUSCLE_GAIN = "Muscle Gain"
     MAINTENANCE = "Maintenance"
+    WEIGHT_GAIN = "Weight Gain"
 
 class DietaryPreference(str, Enum):
     VEGETARIAN = "Vegetarian"
@@ -50,6 +51,7 @@ class Cuisine(str, Enum):
     MEDITERRANEAN = "Mediterranean"
     ITALIAN = "Italian"
     GENERAL_WESTERN = "General Western"
+    
 
 class UserInput(BaseModel):
     age: int = Field(..., gt=15, lt=80)
