@@ -36,7 +36,7 @@ app.add_middleware(
 class FitnessGoal(str, Enum):
     FAT_LOSS = "Fat Loss"
     MUSCLE_GAIN = "Muscle Gain"
-    MAINTENANCE = "Maintenance"
+    STABLE = "Stable"
     WEIGHT_GAIN = "Weight Gain"
 
 class DietaryPreference(str, Enum):
