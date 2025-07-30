@@ -63,6 +63,8 @@ class UserInput(BaseModel):
     allergies: List[str] = Field([], example=["peanuts"])
     meals_per_day: int = Field(5, gt=1, lt=6)
     is_premium: bool = Field(default=False, description="Use gemini-1.5-pro for higher quality.")
+    current_weight: int = Field(..., gt=30, lt=200)
+    target_weight: int = Field(..., gt=30, lt=200)
 
 class MealDetail(BaseModel):
     food_items: List[str]
@@ -85,9 +87,9 @@ class DietPlanResponse(BaseModel):
 class WorkoutRequest(BaseModel):
     days_per_week: int = Field(..., gt=0, le=7)
     experience_level: Literal["beginner", "intermediate", "advanced"]
-    goal: Literal["muscle gain", "fat loss", "general fitness"]
+    goal: Literal["muscle gain", "fat loss", "general fitness","weight loss","Stable"]
     focus: Optional[str] = Field(None, example="legs")
-    is_premium: bool = Field(default=False, description="Use gemini-1.5-pro for a more detailed plan.")
+    is_premium: bool = Field(default=False, description="Use gemini-2.5-pro for a more detailed plan.")
 
 class ExerciseDetail(BaseModel):
     name: str
@@ -115,6 +117,8 @@ def create_diet_prompt(cuisine: str) -> str:
 2.  **JSON FORMAT:** Your ENTIRE response MUST be a single, valid JSON object. Do not add any text, markdown, or explanations outside of the JSON brackets.
 3.  **STRICT SCHEMA:** The JSON object must have exactly three top-level keys: `plan_summary`, `weekly_plan`, and `general_tips`.
 4.  **DATA TYPES:** All calorie and macronutrient values (`calories`, `protein_g`, `carbs_g`, `fats_g`) MUST be integers, NOT strings.
+5. **Include Fruits and Juices in Diet plan**
+6. Dont go above 1500 calories perday in plan.
 
 **EXAMPLE JSON STRUCTURE TO FOLLOW:**
 {{
