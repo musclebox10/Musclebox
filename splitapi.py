@@ -1,127 +1,171 @@
 import os
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Literal, Optional
+from typing import List, Dict, Optional
 import google.generativeai as genai
 from dotenv import load_dotenv
+import asyncio
 
-# Load environment variables from .env file
-# load_dotenv()
+genai.configure(api_key="AIzaSyAGT8ojwDtHKuV5HGYbhDg4QNVM0OfXKl8")
 
-# --- Configuration ---
-# Configure the Gemini API key
-try:
-    genai.configure(api_key="AIzaSyDDwpDZsSFhWKQ8-7Xc6_DGXErhL7WFf7Y")
-except KeyError:
-    raise ValueError("GEMINI_API_KEY not found. Please set it in your .env file.")
-
-# --- FastAPI App Initialization ---
 app = FastAPI(
-    title="Gym Workout Split Generator",
-    description="An API that uses Google Gemini to create personalized workout splits.",
-    version="1.0.0"
+    title="AI Fitness Coach API",
+    description="A unified API to generate personalized diet plans and workout splits with premium tiers.",
+    version="2.2.0",
 )
 
-# --- CORS Configuration ---
-# Allow all origins for simple local testing.
-# For production, you should restrict this to your frontend's domain.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# --- Pydantic Models for Request and Response ---
+# --- Pydantic Models without enums or constraints ---
+
+class UserInput(BaseModel):
+    age: int
+    gender: str
+    height_cm: float
+    weight_kg: float
+    fitness_goal: str
+    dietary_preference: str
+    cuisine: str
+    allergies: List[str] = []
+    meals_per_day: int
+    is_premium: bool = False
+    current_weight: int
+    target_weight: int
+
+class MealDetail(BaseModel):
+    food_items: List[str]
+    calories: int
+    protein_g: int
+    carbs_g: int
+    fats_g: int
+
+class DailyPlan(BaseModel):
+    meals: Dict[str, MealDetail]
+    daily_totals: Dict[str, int]
+
+class DietPlanResponse(BaseModel):
+    plan_summary: Dict[str, str]
+    weekly_plan: Dict[str, DailyPlan]
+    general_tips: List[str]
+
 class WorkoutRequest(BaseModel):
-    days_per_week: int = Field(..., gt=0, le=7, description="Number of workout days per week (1-7).")
-    experience_level: Literal["beginner", "intermediate", "advanced"]
-    goal: Literal["muscle gain", "fat loss", "general fitness"]
-    focus: Optional[str] = Field(None, description="Optional: Specific muscle group or area to focus on (e.g., 'legs', 'upper body').")
+    days_per_week: int
+    experience_level: str
+    goal: str
+    focus: Optional[str] = None
+    is_premium: bool = False
 
+class ExerciseDetail(BaseModel):
+    name: str
+    sets: str
+    reps: str
 
-# --- Gemini Prompt Engineering ---
-def create_gemini_prompt(request: WorkoutRequest) -> str:
-    """Creates a detailed, structured prompt for the Gemini API."""
-    prompt = f"""
-    You are an expert fitness coach and personal trainer.
-    Your task is to generate a detailed, day-wise workout split for a gym-goer based on the following criteria:
+class DailyWorkout(BaseModel):
+    day: str
+    focus: str
+    exercises: List[ExerciseDetail]
 
-    - Days per Week: {request.days_per_week}
-    - Experience Level: {request.experience_level}
-    - Primary Goal: {request.goal}
-    {'- Specific Focus: ' + request.focus if request.focus else ''}
+class WorkoutSplitResponse(BaseModel):
+    workout_plan: List[DailyWorkout]
 
-    Please create a plan for {request.days_per_week} workout days and specify rest days.
+# --- Prompt builders ---
 
-    IMPORTANT INSTRUCTIONS:
-    1. Your response MUST be a valid JSON object.
-    2. Do NOT include any text, markdown formatting (like ```json), greetings, or explanations outside of the main JSON object.
-    3. The JSON object should have a single root key: "workout_plan".
-    4. The "workout_plan" value should be an array of objects.
-    5. Each object in the array represents a day and must have these keys:
-        - "day": (e.g., "Day 1", "Day 2", "Rest Day")
-        - "focus": (e.g., "Chest & Triceps", "Legs & Abs", "Rest")
-        - "exercises": An array of exercise objects. For rest days, this can be an empty array.
-    6. Each exercise object must have these keys:
-        - "name": The name of the exercise (e.g., "Barbell Bench Press").
-        - "sets": The number of sets (e.g., "3-4").
-        - "reps": The repetition range (e.g., "8-12").
+def create_diet_prompt(cuisine: str) -> str:
+    return f"""You are an expert nutritionist generating a diet plan.
 
-    Here is an example structure for a single day object:
-    {{
-        "day": "Day 1",
-        "focus": "Chest & Triceps",
-        "exercises": [
-            {{
-                "name": "Barbell Bench Press",
-                "sets": "4",
-                "reps": "6-8"
-            }},
-            {{
-                "name": "Incline Dumbbell Press",
-                "sets": "3",
-                "reps": "8-12"
-            }}
-        ]
-    }}
+**CRITICAL RULES:**
+1.  **CUISINE:** The plan MUST be based on **{cuisine}** food items.
+2.  **JSON FORMAT:** Your ENTIRE response MUST be a single, valid JSON object. Do not add any text, markdown, or explanations outside of the JSON brackets.
+3.  **STRICT SCHEMA:** The JSON object must have exactly three top-level keys: `plan_summary`, `weekly_plan`, and `general_tips`.
+4.  **DATA TYPES:** All calorie and macronutrient values (`calories`, `protein_g`, `carbs_g`, `fats_g`) MUST be integers, NOT strings.
+5. **Include Fruits and Juices in Diet plan**
 
-    Now, generate the complete JSON object for the user's request.
-    """
-    return prompt
+**EXAMPLE JSON STRUCTURE TO FOLLOW:**
+{{
+  "plan_summary": {{
+    "estimated_daily_calories": "Approx. 2200-2400 kcal",
+    "estimated_daily_protein": "Approx. 150-160 g"
+  }},
+  "weekly_plan": {{
+    "Monday": {{
+      "meals": {{
+        "Breakfast": {{
+          "food_items": ["Oats with whey protein", "Handful of almonds"],
+          "calories": 400, "protein_g": 30, "carbs_g": 50, "fats_g": 10
+        }}
+      }},
+      "daily_totals": {{ "total_calories": 2250, "total_protein_g": 155, "total_carbs_g": 220, "total_fats_g": 65 }}
+    }},
+    "Tuesday": "..."  
+  }},
+  "general_tips": [
+    "Drink 3-4 liters of water daily.",
+    "Get 7-8 hours of sleep for recovery."
+  ]
+}}"""
 
-# --- API Endpoint ---
-@app.post("/generate-workout-split")
-async def generate_workout_split(request: WorkoutRequest):
-    """
-    Generates a workout split using the Gemini API based on user input.
-    """
+@app.post("/generate-diet-plan", response_model=DietPlanResponse, tags=["Diet Plan"])
+async def generate_diet_plan(user_input: UserInput = Body(...)):
     try:
-        prompt = create_gemini_prompt(request)
-        model = genai.GenerativeModel('gemini-2.0-flash')
-        response = model.generate_content(prompt)
-        
-        # Clean the response to ensure it's valid JSON
-        cleaned_response_text = response.text.strip().replace("```json", "").replace("```", "")
-        
-        # Parse the JSON response
-        workout_json = json.loads(cleaned_response_text)
-        return workout_json
+        model_to_use = "gemini-2.5-flash" if user_input.is_premium else "gemini-2.0-flash"
+        print(f"Diet plan request for {user_input.cuisine} cuisine. Using model: {model_to_use}")
+        system_prompt = create_diet_prompt(user_input.cuisine)
 
-    except json.JSONDecodeError:
-        print("Error: Gemini returned invalid JSON.")
-        print("Raw Response:", response.text)
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to parse the workout plan from the AI. The response was not valid JSON."
+        model = genai.GenerativeModel(
+            model_name=model_to_use,
+            system_instruction=system_prompt,
+            generation_config=genai.GenerationConfig(response_mime_type="application/json")
         )
+        user_prompt_data = f"Here are my details, generate my diet plan:\n{json.dumps(user_input.model_dump(), indent=2)}"
+        response = await model.generate_content_async([user_prompt_data])
+        return json.loads(response.text)
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        raise HTTPException(status_code=500, detail=f"An internal error occurred: {str(e)}")
+        print(f"Error in /generate-diet-plan: {e}")
+        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
-@app.get("/", include_in_schema=False)
-def root():
-    return {"message": "Welcome to the Gym Workout Generator API! Go to /docs for documentation."}
+def create_workout_prompt(request: WorkoutRequest) -> str:
+    return f"""You are an expert fitness coach. Generate a detailed, day-wise workout split based on:
+- Days per Week: {request.days_per_week}
+- Experience Level: {request.experience_level}
+- Primary Goal: {request.goal}
+{'- Specific Focus: ' + request.focus if request.focus else ''}
+
+INSTRUCTIONS:
+1. Your response MUST be a valid JSON object with a single root key: "workout_plan".
+2. "workout_plan" is an array of objects, one for each day (including rest days).
+3. Each day object has keys: "day", "focus", and "exercises" (an array of exercise objects).
+4. Each exercise object has keys: "name", "sets", "reps".
+5. Do NOT include any text, markdown, or explanations outside the JSON object."""
+
+@app.post("/generate-workout-split", response_model=WorkoutSplitResponse, tags=["Workout Split"])
+async def generate_workout_split(request: WorkoutRequest = Body(...)):
+    try:
+        prompt = create_workout_prompt(request)
+        model_to_use = "gemini-2.5-flash" if request.is_premium else "gemini-2.0-flash"
+        print(f"Workout split request. Using model: {model_to_use}")
+
+        model = genai.GenerativeModel(
+            model_name=model_to_use,
+            generation_config=genai.GenerationConfig(response_mime_type="application/json")
+        )
+        response = await model.generate_content_async(prompt)
+        return json.loads(response.text)
+    except Exception as e:
+        print(f"Error in /generate-workout-split: {e}")
+        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+
+@app.get("/", tags=["Status"])
+def read_root():
+    return {"status": "AI Fitness Coach API is running. Go to /docs for all endpoints."}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
