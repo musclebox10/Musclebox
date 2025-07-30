@@ -30,7 +30,6 @@ class UserInput(BaseModel):
     age: int
     gender: str
     height_cm: float
-    weight_kg: float
     fitness_goal: str
     dietary_preference: str
     cuisine: str
