@@ -118,7 +118,7 @@ def create_diet_prompt(cuisine: str) -> str:
 3.  **STRICT SCHEMA:** The JSON object must have exactly three top-level keys: `plan_summary`, `weekly_plan`, and `general_tips`.
 4.  **DATA TYPES:** All calorie and macronutrient values (`calories`, `protein_g`, `carbs_g`, `fats_g`) MUST be integers, NOT strings.
 5. **Include Fruits and Juices in Diet plan**
-6. Dont go above 1500 calories perday in plan.
+
 
 **EXAMPLE JSON STRUCTURE TO FOLLOW:**
 {{
