@@ -38,6 +38,7 @@ class UserInput(BaseModel):
     is_premium: bool = False
     current_weight: int
     target_weight: int
+    language: str
 
 class MealDetail(BaseModel):
     food_items: List[str]
@@ -77,7 +78,7 @@ class WorkoutSplitResponse(BaseModel):
 
 # --- Prompt builders ---
 
-def create_diet_prompt(cuisine: str) -> str:
+def create_diet_prompt(cuisine: str,language:str) -> str:
     return f"""You are an expert nutritionist generating a diet plan.
 
 **CRITICAL RULES:**
@@ -86,7 +87,7 @@ def create_diet_prompt(cuisine: str) -> str:
 3.  **STRICT SCHEMA:** The JSON object must have exactly three top-level keys: `plan_summary`, `weekly_plan`, and `general_tips`.
 4.  **DATA TYPES:** All calorie and macronutrient values (`calories`, `protein_g`, `carbs_g`, `fats_g`) MUST be integers, NOT strings.
 5. **Include Fruits and Juices in Diet plan**
-
+Make diet plan in {language}
 **EXAMPLE JSON STRUCTURE TO FOLLOW:**
 {{
   "plan_summary": {{
@@ -116,7 +117,7 @@ async def generate_diet_plan(user_input: UserInput = Body(...)):
     try:
         model_to_use = "gemini-2.5-flash" if user_input.is_premium else "gemini-2.0-flash"
         print(f"Diet plan request for {user_input.cuisine} cuisine. Using model: {model_to_use}")
-        system_prompt = create_diet_prompt(user_input.cuisine)
+        system_prompt = create_diet_prompt(user_input.cuisine,user_input.language)
 
         model = genai.GenerativeModel(
             model_name=model_to_use,
