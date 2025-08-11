@@ -7,7 +7,7 @@ from typing import List, Dict, Optional
 import google.generativeai as genai
 from dotenv import load_dotenv
 import asyncio
-from exercise_string import exercises
+from exercises_string import exercises
 
 exercises_dict=json.loads(exercises)
 exercises_names=exercises_dict.keys()
