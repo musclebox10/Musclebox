@@ -151,7 +151,8 @@ The split should strictly include these exercises only:
 {exercises_names}
 
 exercise names must be lowered.
-"""@app.post("/generate-workout-split", response_model=WorkoutSplitResponse, tags=["Workout Split"])
+"""
+@app.post("/generate-workout-split", response_model=WorkoutSplitResponse, tags=["Workout Split"])
 async def generate_workout_split(request: WorkoutRequest = Body(...)):
     """
     Generates a weekly workout split based on user preferences.
