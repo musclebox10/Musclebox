@@ -7,7 +7,10 @@ from typing import List, Dict, Optional
 import google.generativeai as genai
 from dotenv import load_dotenv
 import asyncio
+from exercise_string import exercises
 
+exercises_dict=json.loads(exercises)
+exercises_names=exercises_dict.keys()
 genai.configure(api_key="AIzaSyAGT8ojwDtHKuV5HGYbhDg4QNVM0OfXKl8")
 
 app = FastAPI(
@@ -143,21 +146,40 @@ INSTRUCTIONS:
 2. "workout_plan" is an array of objects, one for each day (including rest days).
 3. Each day object has keys: "day", "focus", and "exercises" (an array of exercise objects).
 4. Each exercise object has keys: "name", "sets", "reps".
-5. Do NOT include any text, markdown, or explanations outside the JSON object."""
+5. Do NOT include any text, markdown, or explanations outside the JSON object.
+The split should strictly include these exercises only:
+{exercises_names}
 
+exercise names must be lowered.
+"""
 @app.post("/generate-workout-split", response_model=WorkoutSplitResponse, tags=["Workout Split"])
 async def generate_workout_split(request: WorkoutRequest = Body(...)):
+    """
+    Generates a weekly workout split based on user preferences.
+    - Uses **Gemini 2.5 Flash** for premium requests.
+    - Uses **Gemini 2.0 Flash** for standard requests.
+    """
     try:
         prompt = create_workout_prompt(request)
         model_to_use = "gemini-2.5-flash" if request.is_premium else "gemini-2.0-flash"
         print(f"Workout split request. Using model: {model_to_use}")
-
+        
         model = genai.GenerativeModel(
             model_name=model_to_use,
             generation_config=genai.GenerationConfig(response_mime_type="application/json")
         )
+        
         response = await model.generate_content_async(prompt)
-        return json.loads(response.text)
+        workout_json = json.loads(response.text)  # store parsed JSON in workout_json
+        
+        for day_plan in workout_json["workout_plan"]:
+            for exercise in day_plan["exercises"]:
+                name = exercise["name"]
+                if name in exercises_dict:
+                    exercise["url"] = exercises_dict[name]
+        
+        return workout_json
+
     except Exception as e:
         print(f"Error in /generate-workout-split: {e}")
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
