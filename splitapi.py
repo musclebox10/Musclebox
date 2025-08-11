@@ -151,8 +151,7 @@ The split should strictly include these exercises only:
 {exercises_names}
 
 exercise names must be lowered.
-"""
-@app.post("/generate-workout-split", response_model=WorkoutSplitResponse, tags=["Workout Split"])
+"""@app.post("/generate-workout-split", response_model=WorkoutSplitResponse, tags=["Workout Split"])
 async def generate_workout_split(request: WorkoutRequest = Body(...)):
     """
     Generates a weekly workout split based on user preferences.
@@ -170,19 +169,27 @@ async def generate_workout_split(request: WorkoutRequest = Body(...)):
         )
         
         response = await model.generate_content_async(prompt)
-        workout_json = json.loads(response.text)  # store parsed JSON in workout_json
+        workout_json = json.loads(response.text)  # Parsed AI output
         
         for day_plan in workout_json["workout_plan"]:
             for exercise in day_plan["exercises"]:
+                # Normalize sets/reps to strings
+                if "sets" in exercise:
+                    exercise["sets"] = str(exercise["sets"])
+                if "reps" in exercise:
+                    exercise["reps"] = str(exercise["reps"])
+                
+                # Add URL if found
                 name = exercise["name"]
                 if name in exercises_dict:
                     exercise["url"] = exercises_dict[name]
         
-        return workout_json
+        return workout_json  # Must be inside try
 
     except Exception as e:
         print(f"Error in /generate-workout-split: {e}")
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+
 
 @app.get("/", tags=["Status"])
 def read_root():
