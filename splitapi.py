@@ -70,6 +70,7 @@ class ExerciseDetail(BaseModel):
     name: str
     sets: str
     reps: str
+    url: Optional[str] = None
 
 class DailyWorkout(BaseModel):
     day: str
