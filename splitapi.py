@@ -167,7 +167,7 @@ async def generate_workout_split(request: WorkoutRequest = Body(...)):
         prompt = create_workout_prompt(request)
         model_to_use = "gemini-2.5-flash" if request.is_premium else "gemini-2.0-flash"
         print(f"Workout split request. Using model: {model_to_use}")
-        print(json.dumps(request))
+        print(json.dumps(request.dict(), indent=2))
         
         model = genai.GenerativeModel(
             model_name=model_to_use,
