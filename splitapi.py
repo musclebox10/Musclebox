@@ -95,6 +95,7 @@ def create_diet_prompt(cuisine: str,language:str) -> str:
 6. The diet should be able to achive the target in given Time span.
 Make diet plan in {language}
 If the target is weightloss the diet must be calorie deficient and if gain then surplus.
+In general tips add tip to follow the plan strictly to get desired result.
 **EXAMPLE JSON STRUCTURE TO FOLLOW:**
 {{
   "plan_summary": {{
