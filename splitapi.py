@@ -142,9 +142,9 @@ def create_workout_prompt(request: WorkoutRequest) -> str:
     return f"""You are an expert fitness coach. Generate a detailed, day-wise workout split based on:
 - Days per Week: {request.days_per_week}
 - Experience Level: {request.experience_level}
-- Primary Goal: {request.goal}
-{'- Specific Focus: ' + request.focus if request.focus else ''}
-
+- Goal: {request.goal}
+#{'- Specific Focus: ' + request.focus if request.focus else ''}
+All the exercies in plan must be regarding the goal muscle group
 INSTRUCTIONS:
 1. Your response MUST be a valid JSON object with a single root key: "workout_plan".
 2. "workout_plan" is an array of objects, one for each day (including rest days).
@@ -167,6 +167,7 @@ async def generate_workout_split(request: WorkoutRequest = Body(...)):
         prompt = create_workout_prompt(request)
         model_to_use = "gemini-2.5-flash" if request.is_premium else "gemini-2.0-flash"
         print(f"Workout split request. Using model: {model_to_use}")
+        print(json.dumps(request))
         
         model = genai.GenerativeModel(
             model_name=model_to_use,
