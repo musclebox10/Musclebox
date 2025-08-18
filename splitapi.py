@@ -42,6 +42,7 @@ class UserInput(BaseModel):
     current_weight: int
     target_weight: int
     language: str
+    time_span: str
 
 class MealDetail(BaseModel):
     food_items: List[str]
@@ -90,8 +91,10 @@ def create_diet_prompt(cuisine: str,language:str) -> str:
 2.  **JSON FORMAT:** Your ENTIRE response MUST be a single, valid JSON object. Do not add any text, markdown, or explanations outside of the JSON brackets.
 3.  **STRICT SCHEMA:** The JSON object must have exactly three top-level keys: `plan_summary`, `weekly_plan`, and `general_tips`.
 4.  **DATA TYPES:** All calorie and macronutrient values (`calories`, `protein_g`, `carbs_g`, `fats_g`) MUST be integers, NOT strings.
-5. **Include Fruits and Juices in Diet plan**
+5. **Include all kind of Fruits and Juices in Diet plan**
+6. The diet should be able to achive the target in given Time span.
 Make diet plan in {language}
+If the target is weightloss the diet must be calorie deficient and if gain then surplus.
 **EXAMPLE JSON STRUCTURE TO FOLLOW:**
 {{
   "plan_summary": {{
