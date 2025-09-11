@@ -93,7 +93,8 @@ def create_diet_prompt(cuisine: str,language:str) -> str:
 4.  **DATA TYPES:** All calorie and macronutrient values (`calories`, `protein_g`, `carbs_g`, `fats_g`) MUST be integers, NOT strings.
 5. **Include all kind of Fruits and Juices in Diet plan**
 6. The diet should be able to achive the target in given Time span.
-Make diet plan in {language}
+Make diet plan in {language} but use  the terms in native to that country like Bread for Roti etc.
+Food items in plan must strictly belon to that cuisine.
 If the target is weightloss the diet must be calorie deficient and if gain then surplus.
 In general tips add tip to follow the plan strictly to get desired result.
 **EXAMPLE JSON STRUCTURE TO FOLLOW:**
