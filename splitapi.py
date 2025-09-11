@@ -8,7 +8,7 @@ from exercises_string import exercises_new
 
 # --- Setup ---
 # ⚠️ Replace with your real Gemini API key
-genai.configure(api_key="AIzaSyAGT8ojwDtHKuV5HGYbhDg4QNVM0OfXKl8")
+genai.configure(api_key="AIzaSyAGT8ojwDtHKuV5HGYbhDg4QNVM0OfXKl8YOUR_API_KEY_HERE")
 
 exercises_dict = json.loads(exercises_new)
 exercises_names = exercises_dict.keys()
@@ -47,7 +47,7 @@ class UserInput(BaseModel):
 
 class MealDetail(BaseModel):
     food_items: Optional[List[str]] = None
-    item: Optional[str] = None  # sometimes Gemini sends "item" instead of "food_items"
+    item: Optional[str] = None
     calories: int
     protein_g: int
     carbs_g: int
@@ -59,16 +59,14 @@ class DailyPlan(BaseModel):
     daily_totals: Dict[str, int]
 
 
-# --- Weekly & Monthly Variants ---
-
 class WeeklyDietPlanResponse(BaseModel):
-    plan_summary: Dict[str, str]
+    plan_summary: Dict[str, str]  # normalized to string
     weekly_plan: Dict[str, DailyPlan]  # keys: Monday..Sunday
     general_tips: List[str]
 
 
 class MonthlyDietPlanResponse(BaseModel):
-    plan_summary: Dict[str, str]
+    plan_summary: Dict[str, str]  # normalized to string
     weekly_plan: Dict[str, Dict[str, DailyPlan]]  # keys: Week 1..4 → Day 1..7
     general_tips: List[str]
 
@@ -114,6 +112,11 @@ def fix_daily_plan(day_data: dict) -> dict:
                 totals["fats_g"] += meal["fats_g"]
         return {"meals": meals, "daily_totals": totals}
     return day_data
+
+
+def normalize_plan_summary(plan_summary: dict) -> dict:
+    """Convert all plan_summary values to strings."""
+    return {k: str(v) for k, v in plan_summary.items()}
 
 
 def create_diet_prompt(cuisine: str, language: str, time_span: str, current_weight: int, target_weight: int) -> str:
@@ -197,14 +200,16 @@ async def generate_diet_plan(user_input: UserInput = Body(...)):
         response = await model.generate_content_async([json.dumps(user_prompt_data)])
         raw_json = json.loads(response.text)
 
+        # --- Normalize plan_summary ---
+        if "plan_summary" in raw_json:
+            raw_json["plan_summary"] = normalize_plan_summary(raw_json["plan_summary"])
+
         # --- Auto-fix every day ---
         if any(day in raw_json.get("weekly_plan", {}) for day in ["Monday", "Tuesday", "Sunday"]):
-            # Weekly
             for day_name, day_data in raw_json["weekly_plan"].items():
                 raw_json["weekly_plan"][day_name] = fix_daily_plan(day_data)
             return WeeklyDietPlanResponse(**raw_json)
         else:
-            # Monthly
             for week_name, week_data in raw_json["weekly_plan"].items():
                 for day_name, day_data in week_data.items():
                     raw_json["weekly_plan"][week_name][day_name] = fix_daily_plan(day_data)
