@@ -206,8 +206,16 @@ INSTRUCTIONS:
 3. Each day object has keys: "day", "focus", and "exercises" (an array of exercise objects).
 4. Each exercise object has keys: "name", "sets", "reps".
 5. Do NOT include any text, markdown, or explanations outside the JSON object.
-The split should strictly include these exercises only:
-1. Cardio Exercises (fixed list, repetition allowed):
+
+1. Focus Areas
+
+Pick one target muscle group in focus area mentioned (e.g., Chest, Back, Legs, Arms, Shoulders, Abs, or Full Body).
+
+All days must focus on that same muscle group only.
+
+Do not switch to different muscle groups on different days.
+
+2. Cardio Exercises (only if focus = Cardio)
 
 jump rope
 
@@ -221,7 +229,7 @@ jump step-up
 
 battling ropes
 
-2. Stretching Exercises (fixed list, repetition allowed):
+3. Stretching Exercises (only if focus = Stretching)
 
 stretching - hamstring stretch
 
@@ -253,27 +261,23 @@ stretching - spine stretch
 
 stretching - iron cross stretch
 
-3. Rules:
+4. Rules
 
-✅ Exercises can repeat on different days.
+✅ Exercises can repeat across different days.
 
-✅ If focus area = Cardio, use only cardio exercises from the list.
+✅ If focus = Muscle group → use only strength exercises for that group.
 
-✅ If focus area = Stretching, use only stretching exercises from the list.
+✅ If focus = Cardio → use only cardio exercises from the cardio list.
 
-✅ If focus area = Full Body, use only strength/muscle exercises (no cardio/stretching).
+✅ If focus = Stretching → use only stretching exercises from the stretching list.
 
-✅ If focus area = Muscle Group (chest, back, shoulders, arms, legs, etc.), use only strength exercises for that group.
+🚫 Do not mix cardio/stretching with muscle or full body strength days.
 
-🚫 Do NOT mix cardio or stretching into muscle days or full body.
+🚫 Do not create “full body stretching.”
 
-🚫 Do NOT create a “full body stretching” plan.
+🚫 Do not invent exercises outside {list(exercises_names)}.
 
-🚫 Do NOT invent new exercises outside the provided lists.
-
-4. Input: {list(exercises_names)}
-5. Output:
-
+🚫 Do not change the focus muscle group across days.
 A clean day-wise workout plan.
 
 Respect the focus area for each day strictly.
