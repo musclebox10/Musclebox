@@ -3,7 +3,7 @@ exercises='{"dumbbell arnold press": "https://firebasestorage.googleapis.com/v0/
 
 
 
-exercises_new='{
+exercises_new='''{
 "hanging leg hip raise": "https://firebasestorage.googleapis.com/v0/b/musclebox-765b5.firebasestorage.app/o/workout_splits%2FHanging%20Leg%20Hip%20Raise.mp4?alt=media&token=122e7670-7e61-4546-b562-f895468d7853",
 "dumbbell alternate seated biceps curl": "https://firebasestorage.googleapis.com/v0/b/musclebox-765b5.firebasestorage.app/o/workout_splits%2FDumbbell%20Alternate%20Seated%20Biceps%20Curl.mp4?alt=media&token=4025c034-9cad-479e-bae6-375413d31e62",
 "dumbbell concentration curl": "https://firebasestorage.googleapis.com/v0/b/musclebox-765b5.firebasestorage.app/o/workout_splits%2FDumbbell%20Concentration%20Curl.mp4?alt=media&token=14330612-1015-467e-b971-5575a92b26b4",
@@ -69,4 +69,4 @@ exercises_new='{
 "band high fly": "https://firebasestorage.googleapis.com/v0/b/musclebox-765b5.firebasestorage.app/o/workout_splits%2FBand%20High%20Fly.mp4?alt=media&token=778ea35c-a847-4d6f-a324-3db7662dcf35",
 "bycicle twisting crunch": "https://firebasestorage.googleapis.com/v0/b/musclebox-765b5.firebasestorage.app/o/workout_splits%2FBycicle%20Twisting%20Crunch.mp4?alt=media&token=9005dda1-63d1-4733-a874-cf9dcf74b0a7",
 "lever preacher curl": "https://firebasestorage.googleapis.com/v0/b/musclebox-765b5.firebasestorage.app/o/workout_splits%2FLever%20Preacher%20Curl.mp4?alt=media&token=2e94ab15-a809-4f0d-ae0f-91e81f4742d4"
-}'
+}'''
