@@ -245,7 +245,7 @@ async def generate_workout_split(request: WorkoutRequest = Body(...)):
                     exercise["reps"] = str(exercise["reps"])
 
                 # Add URL if found
-                name = exercise.get("name", "").title().strip()
+                name = exercise.get("name", "").lower().strip()
                 if name in exercises_dict:
                     exercise["url"] = exercises_dict.get(name)
 
