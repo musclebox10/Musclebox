@@ -207,12 +207,79 @@ INSTRUCTIONS:
 4. Each exercise object has keys: "name", "sets", "reps".
 5. Do NOT include any text, markdown, or explanations outside the JSON object.
 The split should strictly include these exercises only:
-9. For cardio strictly use these exercises:['jump rope', 'jumping jack', 'running', 'treadmill running', 'jump step-up', 'battling ropes'] strictly and you can repeat exercises on different days.
-10. For streaching strictly use:['stretching - hamstring stretch', 'stretching - all fours squad stretch', 'stretching - hip circles stretch', 'stretching - chin-to-chest stretch', 'stretching - feet and ankles stretch', 'stretching - quadriceps lying stretch', 'stretching - quadriceps stretch', 'stretching - standing bench calf stretch', 'stretching - seated twist (straight arm)', 'stretching - seated wide angle pose sequence', 'stretching - butterfly yoga pose', 'stretching - standing side bend (bent arm)', 'stretching - feet and ankles rotation stretch', 'stretching - spine stretch', 'stretching - iron cross stretch']
-11.Dont give full body in streaching.
-Incluede cardio and streaching in plan only when its in focus area else ignore it.
-*Strictly do not include streaching and cardio exercises with other muscle exercises.*
-{list(exercises_names)}
+1. Cardio Exercises (fixed list, repetition allowed):
+
+jump rope
+
+jumping jack
+
+running
+
+treadmill running
+
+jump step-up
+
+battling ropes
+
+2. Stretching Exercises (fixed list, repetition allowed):
+
+stretching - hamstring stretch
+
+stretching - all fours squad stretch
+
+stretching - hip circles stretch
+
+stretching - chin-to-chest stretch
+
+stretching - feet and ankles stretch
+
+stretching - quadriceps lying stretch
+
+stretching - quadriceps stretch
+
+stretching - standing bench calf stretch
+
+stretching - seated twist (straight arm)
+
+stretching - seated wide angle pose sequence
+
+stretching - butterfly yoga pose
+
+stretching - standing side bend (bent arm)
+
+stretching - feet and ankles rotation stretch
+
+stretching - spine stretch
+
+stretching - iron cross stretch
+
+3. Rules:
+
+✅ Exercises can repeat on different days.
+
+✅ If focus area = Cardio, use only cardio exercises from the list.
+
+✅ If focus area = Stretching, use only stretching exercises from the list.
+
+✅ If focus area = Full Body, use only strength/muscle exercises (no cardio/stretching).
+
+✅ If focus area = Muscle Group (chest, back, shoulders, arms, legs, etc.), use only strength exercises for that group.
+
+🚫 Do NOT mix cardio or stretching into muscle days or full body.
+
+🚫 Do NOT create a “full body stretching” plan.
+
+🚫 Do NOT invent new exercises outside the provided lists.
+
+4. Input: {list(exercises_names)}
+5. Output:
+
+A clean day-wise workout plan.
+
+Respect the focus area for each day strictly.
+
+Cardio/stretching never appear in muscle or full body days.
+Input:{list(exercises_names)}
 
 exercise names must be lowered.
 """
