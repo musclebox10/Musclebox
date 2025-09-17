@@ -211,6 +211,7 @@ The split should strictly include these exercises only:
 10. For streaching strictly use:['stretching - hamstring stretch', 'stretching - all fours squad stretch', 'stretching - hip circles stretch', 'stretching - chin-to-chest stretch', 'stretching - feet and ankles stretch', 'stretching - quadriceps lying stretch', 'stretching - quadriceps stretch', 'stretching - standing bench calf stretch', 'stretching - seated twist (straight arm)', 'stretching - seated wide angle pose sequence', 'stretching - butterfly yoga pose', 'stretching - standing side bend (bent arm)', 'stretching - feet and ankles rotation stretch', 'stretching - spine stretch', 'stretching - iron cross stretch']
 11.Dont give full body in streaching.
 Incluede cardio and streaching in plan only when its in focus area else ignore it.
+*Strictly do not include streaching and cardio exercises with other muscle exercises.*
 {list(exercises_names)}
 
 exercise names must be lowered.
