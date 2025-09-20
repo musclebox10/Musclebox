@@ -2,7 +2,7 @@ import os
 import json
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Dict, Optional
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -10,15 +10,14 @@ import asyncio
 from exercises_string import exercises_new
 
 # Assuming exercises_string.py contains a string like: exercises_new = '{"push up": "url", ...}'
-exercises_dict=json.loads(exercises_new)
-exercises_names=exercises_dict.keys()
-print(exercises_dict.get("Crunch"))
+exercises_dict = json.loads(exercises_new)
+exercises_names = exercises_dict.keys()
+
 # --- IMPORTANT: Replace with your actual API key ---
 # It's recommended to load this from an environment variable for security.
 # load_dotenv()
 # genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 genai.configure(api_key="AIzaSyAGT8ojwDtHKuV5HGYbhDg4QNVM0OfXKl8")
-
 
 app = FastAPI(
     title="AI Fitness Coach API",
@@ -34,9 +33,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Pydantic Models ---
+# --- Diet Plan Models ---
 
-# User input for diet plan
 class UserInput(BaseModel):
     age: int
     gender: str
@@ -52,8 +50,6 @@ class UserInput(BaseModel):
     language: str
     time_span: str
 
-# --- Diet Plan Response Models (MODIFIED) ---
-
 class MealDetail(BaseModel):
     food_items: List[str]
     calories: int
@@ -65,18 +61,16 @@ class DailyPlan(BaseModel):
     meals: Dict[str, MealDetail]
     daily_totals: Dict[str, int]
 
-# NEW: A model to encapsulate a single week's plan
 class WeeklyPlanObject(BaseModel):
     week_summary: str
     daily_plans: Dict[str, DailyPlan]
 
-# MODIFIED: The main response now contains a LIST of weekly plans
 class DietPlanResponse(BaseModel):
     plan_summary: Dict[str, str]
     weekly_plan: List[WeeklyPlanObject]
     general_tips: List[str]
 
-# --- Workout Models (UNCHANGED) ---
+# --- Workout Models ---
 
 class WorkoutRequest(BaseModel):
     days_per_week: int
@@ -101,7 +95,6 @@ class WorkoutSplitResponse(BaseModel):
 
 # --- Prompt builders ---
 
-# MODIFIED: Prompt builder is now dynamic for diet plans
 def create_diet_prompt(cuisine: str, language: str, is_premium: bool) -> str:
     """Creates a dynamic prompt based on the user's premium status."""
     if is_premium:
@@ -131,7 +124,6 @@ def create_diet_prompt(cuisine: str, language: str, is_premium: bool) -> str:
     if is_premium:
         example_plan_list = f"[{example_weekly_object}, ... (4 distinct weekly objects in total)]"
 
-
     return f"""You are an expert nutritionist generating a personalized diet plan.
 
 **TASK:**
@@ -159,7 +151,6 @@ def create_diet_prompt(cuisine: str, language: str, is_premium: bool) -> str:
   ]
 }}"""
 
-
 @app.post("/generate-diet-plan", response_model=DietPlanResponse, tags=["Diet Plan"])
 async def generate_diet_plan(user_input: UserInput = Body(...)):
     """
@@ -168,10 +159,9 @@ async def generate_diet_plan(user_input: UserInput = Body(...)):
     - **Standard (2.0)**: A 1-week plan.
     """
     try:
-        model_to_use = "gemini-2.5-flash" if user_input.is_premium else "gemini-2.0-flash" # Note: Using available model names, adjust if needed
+        model_to_use = "gemini-2.5-flash" if user_input.is_premium else "gemini-2.0-flash"
         print(f"Diet plan request for {user_input.cuisine} cuisine. Premium: {user_input.is_premium}. Using model: {model_to_use}")
 
-        # Create the dynamic system prompt
         system_prompt = create_diet_prompt(
             cuisine=user_input.cuisine,
             language=user_input.language,
@@ -191,102 +181,71 @@ async def generate_diet_plan(user_input: UserInput = Body(...)):
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
 
-# --- WORKOUT SPLIT FUNCTIONALITY (UNCHANGED) ---
+# --- WORKOUT SPLIT FUNCTIONALITY (MODIFIED) ---
 
 def create_workout_prompt(request: WorkoutRequest) -> str:
+    # Define exercise lists
+    cardio_exercises = [
+        "jump rope", "jumping jack", "running", "treadmill running",
+        "jump step-up", "battling ropes"
+    ]
+    stretching_exercises = [
+        "stretching - hamstring stretch", "stretching - all fours squad stretch",
+        "stretching - hip circles stretch", "stretching - chin-to-chest stretch",
+        "stretching - feet and ankles stretch", "stretching - quadriceps lying stretch",
+        "stretching - quadriceps stretch", "stretching - standing bench calf stretch",
+        "stretching - seated twist (straight arm)", "stretching - seated wide angle pose sequence",
+        "stretching - butterfly yoga pose", "stretching - standing side bend (bent arm)",
+        "stretching - feet and ankles rotation stretch", "stretching - spine stretch",
+        "stretching - iron cross stretch"
+    ]
+
+    # Initialize the exercise list for the prompt
+    exercise_list_for_prompt = list(exercises_names)
+    prompt_focus_instruction = f"""
+- Specific Focus: {request.focus if request.focus else 'Not specified'}
+All exercises in the plan must be regarding the goal muscle group.
+"""
+    
+    # Conditionally modify the exercise list and instruction based on focus area
+    if request.focus and request.focus.lower() == 'cardio':
+        exercise_list_for_prompt = cardio_exercises
+        prompt_focus_instruction = f"""
+- Specific Focus: {request.focus}
+ALL exercises for ALL days MUST be exclusively from the cardio list. DO NOT include any other exercises.
+"""
+    elif request.focus and request.focus.lower() == 'stretching':
+        exercise_list_for_prompt = stretching_exercises
+        prompt_focus_instruction = f"""
+- Specific Focus: {request.focus}
+ALL exercises for ALL days MUST be exclusively from the stretching list. DO NOT include any other exercises.
+"""
+    
+    # Now, build the main prompt string
     return f"""You are an expert fitness coach. Generate a detailed, day-wise workout split based on:
 - Days per Week: {request.days_per_week}
 - Experience Level: {request.experience_level}
 - Goal: {request.goal}
-#{'- Specific Focus: ' + request.focus if request.focus else ''}
-All the exercies in plan must be regarding the goal muscle group
-INSTRUCTIONS:
-1. Your response MUST be a valid JSON object with a single root key: "workout_plan".
-2. "workout_plan" is an array of objects, one for each day (including rest days).
-3. Each day object has keys: "day", "focus", and "exercises" (an array of exercise objects).
-4. Each exercise object has keys: "name", "sets", "reps".
-5. Do NOT include any text, markdown, or explanations outside the JSON object.
+{prompt_focus_instruction}
 
-1. Focus Areas
+STRICTLY FOLLOW THESE RULES:
+1. The ENTIRE response MUST be a single, valid JSON object with the key "workout_plan".
+2. The `workout_plan` array MUST contain exactly {request.days_per_week} objects.
+3. The `focus` of EVERY day MUST be the user's requested focus area: {request.focus if request.focus else request.goal}.
+4. For EACH exercise object, the ONLY allowed keys are "name", "sets", and "reps". DO NOT INCLUDE ANY OTHER KEYS like "duration", "rest", or "notes".
+5. For focus area 'cardio', only use exercises from the provided cardio list.
+6. For focus area 'stretching', only use exercises from the provided stretching list.
+7. For all other focus areas, use exercises from the complete list related to the goal muscle group.
+8. Do not invent exercises outside the provided lists.
+9. Do not add any text, markdown, or explanations outside the JSON object.
 
-Pick one target muscle group in focus area mentioned (e.g., Chest, Back, Legs, Arms, Shoulders, Abs, or Full Body).
-
-All days must focus on that same muscle group only.
-
-Do not switch to different muscle groups on different days.
-
-2. Cardio Exercises (only if focus = Cardio)
-
-jump rope
-
-jumping jack
-
-running
-
-treadmill running
-
-jump step-up
-
-battling ropes
-
-3. Stretching Exercises (only if focus = Stretching)
-
-stretching - hamstring stretch
-
-stretching - all fours squad stretch
-
-stretching - hip circles stretch
-
-stretching - chin-to-chest stretch
-
-stretching - feet and ankles stretch
-
-stretching - quadriceps lying stretch
-
-stretching - quadriceps stretch
-
-stretching - standing bench calf stretch
-
-stretching - seated twist (straight arm)
-
-stretching - seated wide angle pose sequence
-
-stretching - butterfly yoga pose
-
-stretching - standing side bend (bent arm)
-
-stretching - feet and ankles rotation stretch
-
-stretching - spine stretch
-
-stretching - iron cross stretch
-
-4. Rules
-
-✅ Exercises can repeat across different days.
-
-✅ If focus = Muscle group → use only strength exercises for that group.
-
-✅ If focus = Cardio → use only cardio exercises from the cardio list.
-
-✅ If focus = Stretching → use only stretching exercises from the stretching list.
-
-🚫 Do not mix cardio/stretching with muscle or full body strength days.
-
-🚫 Do not create “full body stretching.”
-
-🚫 Do not invent exercises outside {list(exercises_names)}.
-
-🚫 Do not change the focus muscle group across days.
 A clean day-wise workout plan.
 
-Respect the focus area for each day strictly.
-
-Cardio/stretching never appear in muscle or full body days.
-Input:{list(exercises_names)}
-
-exercise names must be lowered.
+Input: {exercise_list_for_prompt}
+Exercise names must be lowercase.
 """
+
+
 @app.post("/generate-workout-split", response_model=WorkoutSplitResponse, tags=["Workout Split"])
 async def generate_workout_split(request: WorkoutRequest = Body(...)):
     """
