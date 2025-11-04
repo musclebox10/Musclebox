@@ -17,7 +17,7 @@ exercises_names = exercises_dict.keys()
 # It's recommended to load this from an environment variable for security.
 # load_dotenv()
 # genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-genai.configure(api_key="AIzaSyAGT8ojwDtHKuV5HGYbhDg4QNVM0OfXKl8")
+genai.configure(api_key="AIzaSyB0kkKSb14LduVMUgb7TqFKHIK3IZx4HhM")
 
 app = FastAPI(
     title="AI Fitness Coach API",
