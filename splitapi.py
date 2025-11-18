@@ -45,8 +45,8 @@ class UserInput(BaseModel):
     allergies: List[str] = []
     meals_per_day: int
     is_premium: bool = False
-    current_weight: int
-    target_weight: int
+    current_weight: float
+    target_weight: float
     language: str
     time_span: str
 
