@@ -159,7 +159,7 @@ async def generate_diet_plan(user_input: UserInput = Body(...)):
     - **Standard (2.0)**: A 1-week plan.
     """
     try:
-        model_to_use = "gemini-2.5-flash" if user_input.is_premium else "gemini-2.0-flash"
+        model_to_use = "gemini-2.5-flash" if user_input.is_premium else "gemini-2.0-flash-lite"
         print(f"Diet plan request for {user_input.cuisine} cuisine. Premium: {user_input.is_premium}. Using model: {model_to_use}")
 
         system_prompt = create_diet_prompt(
@@ -255,7 +255,7 @@ async def generate_workout_split(request: WorkoutRequest = Body(...)):
     """
     try:
         prompt = create_workout_prompt(request)
-        model_to_use = "gemini-2.5-flash" if request.is_premium else "gemini-2.0-flash"
+        model_to_use = "gemini-2.5-flash" if request.is_premium else "gemini-2.0-flash-lite"
         print(f"Workout split request. Using model: {model_to_use}")
         print(json.dumps(request.dict(), indent=2))
 
