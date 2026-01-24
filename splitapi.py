@@ -15,9 +15,8 @@ exercises_names = exercises_dict.keys()
 
 # --- IMPORTANT: Replace with your actual API key ---
 # It's recommended to load this from an environment variable for security.
-# load_dotenv()
-# genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-genai.configure(api_key="AIzaSyAsBQ0nHb1auanUIbZ-gJX9T0c0ZwqUmkk")
+load_dotenv()
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 app = FastAPI(
     title="AI Fitness Coach API",
