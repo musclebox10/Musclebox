@@ -3,10 +3,10 @@ import json
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Optional
-import google.generativeai as genai
+from typing import List, Dict, Optional, Type
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
-import asyncio
 from exercises_string import exercises_new
 
 # Assuming exercises_string.py contains a string like: exercises_new = '{"push up": "url", ...}'
@@ -16,7 +16,9 @@ exercises_names = exercises_dict.keys()
 # --- IMPORTANT: Replace with your actual API key ---
 # It's recommended to load this from an environment variable for security.
 load_dotenv()
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+gemini_client = genai.Client(
+    api_key=os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+)
 
 app = FastAPI(
     title="AI Fitness Coach API",
@@ -92,6 +94,33 @@ class DailyWorkout(BaseModel):
 class WorkoutSplitResponse(BaseModel):
     workout_plan: List[DailyWorkout]
 
+# Schemas used for Gemini structured output (model generates name/sets/reps only; url is added post-processing).
+class WorkoutExerciseSchema(BaseModel):
+    name: str
+    sets: str
+    reps: str
+
+class WorkoutDaySchema(BaseModel):
+    day: str
+    focus: str
+    exercises: List[WorkoutExerciseSchema]
+
+class WorkoutSplitSchema(BaseModel):
+    workout_plan: List[WorkoutDaySchema]
+
+def build_structured_generation_config(
+    response_model: Type[BaseModel],
+    system_instruction: Optional[str] = None,
+) -> types.GenerateContentConfig:
+    """Generation config with JSON schema constraint for structured output."""
+    config_kwargs = {
+        "response_mime_type": "application/json",
+        "response_json_schema": response_model.model_json_schema(),
+    }
+    if system_instruction:
+        config_kwargs["system_instruction"] = system_instruction
+    return types.GenerateContentConfig(**config_kwargs)
+
 # --- Prompt builders ---
 
 def create_diet_prompt(cuisine: str, language: str, is_premium: bool) -> str:
@@ -154,11 +183,11 @@ def create_diet_prompt(cuisine: str, language: str, is_premium: bool) -> str:
 async def generate_diet_plan(user_input: UserInput = Body(...)):
     """
     Generates a personalized diet plan.
-    - **Premium (2.5)**: A comprehensive 4-week plan with weekly variety.
-    - **Standard (2.0)**: A 1-week plan.
+    - **Premium (2.5 Pro)**: A comprehensive 4-week plan with weekly variety.
+    - **Standard (2.5 Flash)**: A 1-week plan.
     """
     try:
-        model_to_use = "gemini-2.5-flash" if user_input.is_premium else "gemini-2.0-flash"
+        model_to_use = "gemini-2.5-pro" if user_input.is_premium else "gemini-2.5-flash"
         print(f"Diet plan request for {user_input.cuisine} cuisine. Premium: {user_input.is_premium}. Using model: {model_to_use}")
 
         system_prompt = create_diet_prompt(
@@ -167,13 +196,16 @@ async def generate_diet_plan(user_input: UserInput = Body(...)):
             is_premium=user_input.is_premium
         )
 
-        model = genai.GenerativeModel(
-            model_name=model_to_use,
-            system_instruction=system_prompt,
-            generation_config=genai.GenerationConfig(response_mime_type="application/json")
-        )
         user_prompt_data = f"Here are my details, generate my diet plan:\n{json.dumps(user_input.model_dump(), indent=2)}"
-        response = await model.generate_content_async([user_prompt_data])
+
+        response = await gemini_client.aio.models.generate_content(
+            model=model_to_use,
+            contents=user_prompt_data,
+            config=build_structured_generation_config(
+                DietPlanResponse,
+                system_instruction=system_prompt,
+            ),
+        )
         return json.loads(response.text)
     except Exception as e:
         print(f"Error in /generate-diet-plan: {e}")
@@ -249,22 +281,21 @@ Exercise names must be lowercase.
 async def generate_workout_split(request: WorkoutRequest = Body(...)):
     """
     Generates a weekly workout split based on user preferences.
-    - Uses **Gemini 2.5 Flash** for premium requests.
-    - Uses **Gemini 2.0 Flash** for standard requests.
+    - Uses **Gemini 2.5 Pro** for premium requests.
+    - Uses **Gemini 2.5 Flash** for standard requests.
     """
     try:
         prompt = create_workout_prompt(request)
-        model_to_use = "gemini-2.5-flash" if request.is_premium else "gemini-2.0-flash"
+        model_to_use = "gemini-2.5-pro" if request.is_premium else "gemini-2.5-flash"
         print(f"Workout split request. Using model: {model_to_use}")
         print(json.dumps(request.dict(), indent=2))
 
-        model = genai.GenerativeModel(
-            model_name=model_to_use,
-            generation_config=genai.GenerationConfig(response_mime_type="application/json")
+        response = await gemini_client.aio.models.generate_content(
+            model=model_to_use,
+            contents=prompt,
+            config=build_structured_generation_config(WorkoutSplitSchema),
         )
-
-        response = await model.generate_content_async(prompt)
-        workout_json = json.loads(response.text)  # Parsed AI output
+        workout_json = json.loads(response.text)
 
         for day_plan in workout_json.get("workout_plan", []):
             for exercise in day_plan.get("exercises", []):
