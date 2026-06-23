@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 
 
-genai.configure(api_key="AIzaSyAGT8ojwDtHKuV5HGYbhDg4QNVM0OfXKl8")
+genai.configure(api_key="")
 
 # --- 2. Create and Configure the FastAPI App Instance ---
 app = FastAPI(
